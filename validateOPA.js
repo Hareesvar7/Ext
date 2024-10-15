@@ -4,58 +4,34 @@ const fs = require('fs');
 const path = require('path');
 
 async function validateOPA() {
-    // Show file picker to select the .rego file
-    const regoFileUri = await vscode.window.showOpenDialog({
-        canSelectMany: false,
-        filters: { 'Rego Files': ['rego'] },
-    });
-
-    if (!regoFileUri || regoFileUri.length === 0) {
-        vscode.window.showErrorMessage('No file selected.');
-        return;
-    }
-
-    const regoFilePath = regoFileUri[0].fsPath;
-
-    // Show file picker to select the input JSON file
-    const jsonFileUri = await vscode.window.showOpenDialog({
-        canSelectMany: false,
-        filters: { 'JSON Files': ['json'] },
-    });
-
-    if (!jsonFileUri || jsonFileUri.length === 0) {
-        vscode.window.showErrorMessage('No file selected.');
-        return;
-    }
-
-    const jsonFilePath = jsonFileUri[0].fsPath;
-
-    // Show webview to get the policy type from the user
-    showPolicyInputWebview(regoFilePath, jsonFilePath);
-}
-
-function showPolicyInputWebview(regoFilePath, jsonFilePath) {
     const panel = vscode.window.createWebviewPanel(
-        'policyInput', // Identifies the type of the webview
-        'Input Policy Type', // Title of the panel
+        'opaValidation', // Identifies the type of the webview
+        'OPA Validation', // Title of the panel
         vscode.ViewColumn.One, // Show the panel in the first column
         {
             enableScripts: true, // Allow scripts in the webview
         }
     );
 
-    // Set the HTML content of the webview
-    panel.webview.html = getPolicyInputWebviewContent(regoFilePath, jsonFilePath);
+    panel.webview.html = getWebviewContent();
+
+    panel.webview.onDidReceiveMessage(async message => {
+        switch (message.command) {
+            case 'runOPA':
+                await runOPAEval(message.regoContent, message.jsonContent, message.policyType, panel);
+                return;
+        }
+    });
 }
 
-function getPolicyInputWebviewContent(regoFilePath, jsonFilePath) {
+function getWebviewContent() {
     return `
         <!DOCTYPE html>
         <html lang="en">
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Input Policy Type</title>
+            <title>OPA Validation</title>
             <style>
                 body {
                     font-family: Arial, sans-serif;
@@ -63,21 +39,17 @@ function getPolicyInputWebviewContent(regoFilePath, jsonFilePath) {
                     background-color: #1e1e1e;
                     color: #d4d4d4;
                 }
-                input {
-                    width: 100%;
+                input, button {
                     padding: 10px;
                     margin-top: 10px;
+                    width: 100%;
                     border-radius: 5px;
                     border: 1px solid #444;
                 }
                 button {
-                    padding: 10px;
-                    margin-top: 20px;
-                    width: 100%;
-                    border-radius: 5px;
-                    border: none;
                     background-color: #007acc;
                     color: white;
+                    border: none;
                 }
                 button:hover {
                     background-color: #005a9c;
@@ -91,39 +63,59 @@ function getPolicyInputWebviewContent(regoFilePath, jsonFilePath) {
                     padding: 10px;
                     border-radius: 5px;
                     overflow: auto;
-                    white-space: pre-wrap; /* Ensures long lines are wrapped */
-                    margin-top: 20px;
-                    height: 300px; /* Fixed height for the output box */
+                    white-space: pre-wrap;
+                    height: 300px; /* Set height for the output box */
+                    margin-top: 20px; /* Add margin for spacing */
                 }
             </style>
         </head>
         <body>
-            <h1>Input Policy Type</h1>
+            <h1>OPA Validation</h1>
+            <input type="file" id="regoFile" accept=".rego" />
+            <input type="file" id="jsonFile" accept=".json" />
             <input type="text" id="policyType" placeholder="Enter policy type (e.g., data.example.allow)" />
             <button id="run">Run OPA Validation</button>
-            <div id="output"></div> <!-- Output box for displaying results -->
+            <div id="output"></div> <!-- Output box -->
             <script>
                 const vscode = acquireVsCodeApi();
 
-                document.getElementById('run').onclick = () => {
-                    const policyType = document.getElementById('policyType').value;
+                document.getElementById('run').onclick = async () => {
+                    const regoFileInput = document.getElementById('regoFile');
+                    const jsonFileInput = document.getElementById('jsonFile');
 
-                    if (!policyType) {
-                        alert('Please enter a policy type.');
+                    if (regoFileInput.files.length === 0 || jsonFileInput.files.length === 0) {
+                        alert('Please select both .rego and .json files.');
                         return;
                     }
 
-                    // Send message to main process to run OPA evaluation
+                    const regoFile = regoFileInput.files[0];
+                    const jsonFile = jsonFileInput.files[0];
+                    const policyType = document.getElementById('policyType').value;
+
+                    const regoContent = await readFileContent(regoFile);
+                    const jsonContent = await readFileContent(jsonFile);
+
                     vscode.postMessage({
                         command: 'runOPA',
+                        regoContent,
+                        jsonContent,
                         policyType
                     });
                 };
 
+                async function readFileContent(file) {
+                    return new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = () => reject(new Error('Failed to read file'));
+                        reader.readAsText(file);
+                    });
+                }
+
                 window.addEventListener('message', event => {
                     const message = event.data;
                     if (message.output) {
-                        document.getElementById('output').innerText = message.output; // Display output in the output box
+                        document.getElementById('output').innerText = message.output;
                     }
                 });
             </script>
@@ -131,97 +123,34 @@ function getPolicyInputWebviewContent(regoFilePath, jsonFilePath) {
         </html>`;
 }
 
-async function runOPAEval(regoFilePath, jsonFilePath, policyType, panel) {
-    if (!policyType) {
-        vscode.window.showErrorMessage('Please provide a policy type.');
+async function runOPAEval(regoContent, jsonContent, policyType, panel) {
+    if (!regoContent || !jsonContent || !policyType) {
+        vscode.window.showErrorMessage('Please provide the contents of the .rego and .json files and enter a policy type.');
         return;
     }
 
-    // Execute the OPA command
+    // Create temporary files to store the content
+    const regoFilePath = path.join(__dirname, 'temp.rego');
+    const jsonFilePath = path.join(__dirname, 'temp.json');
+
+    fs.writeFileSync(regoFilePath, regoContent);
+    fs.writeFileSync(jsonFilePath, jsonContent);
+
     const opaCommand = `opa eval -i ${jsonFilePath} -d ${regoFilePath} "${policyType}"`;
 
     exec(opaCommand, (error, stdout, stderr) => {
+        // Clean up temporary files after execution
+        fs.unlinkSync(regoFilePath);
+        fs.unlinkSync(jsonFilePath);
+
         if (error) {
             console.error(`Error: ${stderr}`);
             panel.webview.postMessage({ output: 'Error evaluating the policy.' });
             return;
         }
 
-        // Show results in the output box
         panel.webview.postMessage({ output: stdout });
     });
-}
-
-function showResultsInWebview(output) {
-    const panel = vscode.window.createWebviewPanel(
-        'opaResults', // Identifies the type of the webview
-        'OPA Validation Results', // Title of the panel
-        vscode.ViewColumn.One, // Show the panel in the first column
-        {
-            enableScripts: true, // Allow scripts in the webview
-        }
-    );
-
-    // Set the HTML content of the webview
-    panel.webview.html = getWebviewContent(output);
-}
-
-function getWebviewContent(output) {
-    return `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>OPA Validation Results</title>
-            <style>
-                body {
-                    font-family: Arial, sans-serif;
-                    padding: 20px;
-                    background-color: #1e1e1e;
-                    color: #d4d4d4;
-                }
-                pre {
-                    background: #282c34;
-                    color: #abb2bf;
-                    padding: 10px;
-                    border-radius: 5px;
-                    overflow: auto;
-                    white-space: pre-wrap; /* Ensures long lines are wrapped */
-                }
-                h1 {
-                    color: #61afef;
-                }
-                .button {
-                    background-color: #007acc;
-                    color: white;
-                    border: none;
-                    padding: 10px 20px;
-                    margin-top: 20px;
-                    cursor: pointer;
-                    border-radius: 5px;
-                }
-                .button:hover {
-                    background-color: #005a9c;
-                }
-            </style>
-        </head>
-        <body>
-            <h1>OPA Validation Results</h1>
-            <pre>${output}</pre>
-            <button class="button" onclick="copyToClipboard()">Copy to Clipboard</button>
-            <script>
-                function copyToClipboard() {
-                    const outputText = document.querySelector('pre').innerText;
-                    navigator.clipboard.writeText(outputText).then(() => {
-                        alert('Output copied to clipboard!');
-                    }, () => {
-                        alert('Failed to copy output.');
-                    });
-                }
-            </script>
-        </body>
-        </html>`;
 }
 
 module.exports = validateOPA;
