@@ -1,11 +1,30 @@
-"contributes": {
-    "commands": [
-        {
-            "command": "extension.validateOPA",
-            "title": "Validate OPA"
-        }
-    ]
-},
-"activationEvents": [
-    "onCommand:extension.validateOPA"
-]
+{
+    "name": "my-opa-ai-extension",
+    "displayName": "My OPA AI Extension",
+    "description": "Extension to validate OPA policies and interact with OpenAI.",
+    "version": "0.0.1",
+    "engines": {
+        "vscode": "^1.60.0"
+    },
+    "activationEvents": [
+        "onCommand:extension.validateOPA",
+        "onCommand:extension.aiAssistant"
+    ],
+    "main": "./src/extension.js",
+    "contributes": {
+        "commands": [
+            {
+                "command": "extension.validateOPA",
+                "title": "Validate OPA"
+            },
+            {
+                "command": "extension.aiAssistant",
+                "title": "AI Assistant"
+            }
+        ]
+    },
+    "devDependencies": {
+        "axios": "^0.21.1",
+        "dotenv": "^10.0.0"
+    }
+}
