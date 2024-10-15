@@ -6,20 +6,14 @@
     "engines": {
         "vscode": "^1.60.0"
     },
-    "activationEvents": [
-        "onCommand:extension.validateOPA",
-        "onCommand:extension.aiAssistant"
-    ],
+    "activationEvents": [],
     "main": "./src/extension.js",
     "contributes": {
-        "commands": [
+        "themes": [
             {
-                "command": "extension.validateOPA",
-                "title": "Validate OPA"
-            },
-            {
-                "command": "extension.aiAssistant",
-                "title": "AI Assistant"
+                "label": "My Custom Theme",
+                "uiTheme": "vs-dark",
+                "path": "./themes/theme.json"
             }
         ]
     },
