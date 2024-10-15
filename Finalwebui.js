@@ -20,6 +20,7 @@ async function validateOPA() {
             if (message.command === 'submitFiles') {
                 const regoContent = message.regoContent;
                 const jsonContent = message.jsonContent;
+                const query = message.query; // Get the user input query
 
                 // Create temporary files for the received content
                 const regoTempPath = path.join(__dirname, 'tempPolicy.rego');
@@ -28,8 +29,8 @@ async function validateOPA() {
                 fs.writeFileSync(regoTempPath, regoContent);
                 fs.writeFileSync(jsonTempPath, jsonContent);
 
-                // Build the OPA command
-                const opaCommand = `opa eval -i ${jsonTempPath} -d ${regoTempPath} "data.example.allow"`;
+                // Build the OPA command with the user-defined query
+                const opaCommand = `opa eval -i ${jsonTempPath} -d ${regoTempPath} "${query}"`;
 
                 // Execute the OPA command
                 exec(opaCommand, (error, stdout, stderr) => {
@@ -74,7 +75,7 @@ function getWebviewContent() {
                     margin-bottom: 10px;
                     display: block;
                 }
-                input[type="file"] {
+                input[type="file"], input[type="text"] {
                     font-size: 16px;
                     padding: 8px;
                     border: 1px solid #d1d5db;
@@ -126,6 +127,8 @@ function getWebviewContent() {
             <input type="file" id="regoFile" accept=".rego">
             <label for="jsonFile">Select JSON Input File:</label>
             <input type="file" id="jsonFile" accept=".json">
+            <label for="query">Enter OPA Query (e.g., data.example.deny):</label>
+            <input type="text" id="query" placeholder="Enter OPA query..." value="data.example.deny">
             <button id="submit">Validate Policy</button>
             <div class="response" id="response"></div>
             <script>
@@ -133,6 +136,7 @@ function getWebviewContent() {
                 document.getElementById('submit').addEventListener('click', () => {
                     const regoFileInput = document.getElementById('regoFile').files[0];
                     const jsonFileInput = document.getElementById('jsonFile').files[0];
+                    const queryInput = document.getElementById('query').value; // Get the query input
 
                     if (!regoFileInput || !jsonFileInput) {
                         vscode.postMessage({ command: 'displayError', error: 'Both files must be selected.' });
@@ -151,7 +155,8 @@ function getWebviewContent() {
                             vscode.postMessage({
                                 command: 'submitFiles',
                                 regoContent: regoFileContent,
-                                jsonContent: jsonFileContent
+                                jsonContent: jsonFileContent,
+                                query: queryInput // Send the query to the extension
                             });
                         };
                         jsonReader.readAsText(jsonFileInput);
