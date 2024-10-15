@@ -1,89 +1,41 @@
 const vscode = require('vscode');
 
 async function showCloudServiceSelection() {
-    const cloudProviders = ['AWS', 'Azure', 'GCP'];
-    const selectedCloudProvider = await vscode.window.showQuickPick(cloudProviders, {
-        placeHolder: 'Select a cloud provider',
-    });
-
-    if (!selectedCloudProvider) {
-        vscode.window.showErrorMessage('No cloud provider selected.');
-        return;
-    }
-
-    const services = getServicesByProvider(selectedCloudProvider);
-    const selectedService = await vscode.window.showQuickPick(services, {
-        placeHolder: `Select a service for ${selectedCloudProvider}`,
-    });
-
-    if (!selectedService) {
-        vscode.window.showErrorMessage('No service selected.');
-        return;
-    }
-
-    const template = getServiceTemplate(selectedCloudProvider, selectedService);
-    showTemplateInOutput(template);
-}
-
-function getServicesByProvider(provider) {
-    const serviceMap = {
-        AWS: ['EFS', 'EKS', 'S3', 'VPC', 'IAM', 'LAMBDA'],
-        Azure: ['Blob Storage', 'AKS', 'Function App', 'VNet', 'Key Vault'],
-        GCP: ['Cloud Storage', 'GKE', 'Cloud Functions', 'VPC', 'IAM'],
-    };
-    return serviceMap[provider] || [];
-}
-
-function getServiceTemplate(provider, service) {
-    const templates = {
-        AWS: {
-            EFS: 'AWS EFS Template Content...',
-            EKS: 'AWS EKS Template Content...',
-            S3: 'AWS S3 Template Content...',
-            VPC: 'AWS VPC Template Content...',
-            IAM: 'AWS IAM Template Content...',
-            LAMBDA: 'AWS Lambda Template Content...',
-        },
-        Azure: {
-            'Blob Storage': 'Azure Blob Storage Template Content...',
-            AKS: 'Azure AKS Template Content...',
-            'Function App': 'Azure Function App Template Content...',
-            VNet: 'Azure VNet Template Content...',
-            'Key Vault': 'Azure Key Vault Template Content...',
-        },
-        GCP: {
-            'Cloud Storage': 'GCP Cloud Storage Template Content...',
-            GKE: 'GCP GKE Template Content...',
-            'Cloud Functions': 'GCP Cloud Functions Template Content...',
-            VPC: 'GCP VPC Template Content...',
-            IAM: 'GCP IAM Template Content...',
-        },
-    };
-
-    return templates[provider][service] || 'Template not found.';
-}
-
-function showTemplateInOutput(template) {
     const panel = vscode.window.createWebviewPanel(
-        'cloudServiceTemplate', // Identifies the type of the webview
-        'Cloud Service Template', // Title of the panel
-        vscode.ViewColumn.One, // Show the panel in the first column
+        'cloudServiceSelection', // Identifies the type of the webview
+        'Select Cloud Service',  // Title of the panel
+        vscode.ViewColumn.One,    // Show the panel in the first column
         {
             enableScripts: true, // Allow scripts in the webview
         }
     );
 
-    panel.webview.html = getWebviewContent(template);
+    // Set the HTML content of the webview
+    panel.webview.html = getWebviewContent();
+
+    // Handle messages from the webview
+    panel.webview.onDidReceiveMessage(
+        async (message) => {
+            switch (message.command) {
+                case 'serviceSelected':
+                    const template = getServiceTemplate(message.provider, message.service);
+                    panel.webview.postMessage({ command: 'showTemplate', template });
+                    break;
+            }
+        },
+        undefined,
+        context.subscriptions
+    );
 }
 
-function getWebviewContent(template) {
+function getWebviewContent() {
     return `
         <!DOCTYPE html>
         <html lang="en">
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Cloud Service Template</title>
+            <title>Select Cloud Service</title>
             <style>
                 body {
                     font-family: Arial, sans-serif;
@@ -91,24 +43,95 @@ function getWebviewContent(template) {
                     background-color: #1e1e1e;
                     color: #d4d4d4;
                 }
-                pre {
-                    background: #282c34;
-                    color: #abb2bf;
-                    padding: 10px;
+                button {
+                    background-color: #007acc;
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    margin: 5px;
+                    cursor: pointer;
                     border-radius: 5px;
-                    overflow: auto;
-                    white-space: pre-wrap; /* Ensures long lines are wrapped */
+                }
+                button:hover {
+                    background-color: #005a9c;
                 }
                 h1 {
                     color: #61afef;
                 }
+                .services {
+                    margin-top: 20px;
+                }
             </style>
         </head>
         <body>
-            <h1>Service Template</h1>
-            <pre>${template}</pre>
+            <h1>Select Cloud Provider</h1>
+            <div class="providers">
+                <button onclick="selectProvider('AWS')">AWS</button>
+                <button onclick="selectProvider('Azure')">Azure</button>
+                <button onclick="selectProvider('GCP')">GCP</button>
+            </div>
+            <div class="services"></div>
+
+            <script>
+                function selectProvider(provider) {
+                    const servicesMap = {
+                        AWS: ['EFS', 'EKS', 'S3', 'VPC', 'IAM', 'LAMBDA'],
+                        Azure: ['Blob Storage', 'AKS', 'Function App', 'VNet', 'Key Vault'],
+                        GCP: ['Cloud Storage', 'GKE', 'Cloud Functions', 'VPC', 'IAM'],
+                    };
+                    const services = servicesMap[provider];
+                    const servicesContainer = document.querySelector('.services');
+                    servicesContainer.innerHTML = '<h2>Select Service</h2>';
+                    services.forEach(service => {
+                        const button = document.createElement('button');
+                        button.textContent = service;
+                        button.onclick = () => {
+                            vscode.postMessage({ command: 'serviceSelected', provider, service });
+                        };
+                        servicesContainer.appendChild(button);
+                    });
+                }
+
+                window.addEventListener('message', event => {
+                    const message = event.data;
+                    switch (message.command) {
+                        case 'showTemplate':
+                            document.body.innerHTML = '<h1>Service Template</h1><pre>' + message.template + '</pre>';
+                            break;
+                    }
+                });
+            </script>
         </body>
         </html>`;
+}
+
+function getServiceTemplate(provider, service) {
+    const templates = {
+        AWS: {
+            EFS: 'template for AWS EFS service... \n\nallow {\n    input.path = "EFS"\n}',
+            EKS: 'template for AWS EKS service... \n\nallow {\n    input.path = "EKS"\n}',
+            S3: 'template for AWS S3 service... \n\nallow {\n    input.path = "S3"\n}',
+            VPC: 'template for AWS VPC service... \n\nallow {\n    input.path = "VPC"\n}',
+            IAM: 'template for AWS IAM service... \n\nallow {\n    input.path = "IAM"\n}',
+            LAMBDA: 'template for AWS Lambda service... \n\nallow {\n    input.path = "LAMBDA"\n}',
+        },
+        Azure: {
+            'Blob Storage': 'template for Azure Blob Storage service... \n\nallow {\n    input.path = "Blob Storage"\n}',
+            AKS: 'template for Azure AKS service... \n\nallow {\n    input.path = "AKS"\n}',
+            'Function App': 'template for Azure Function App service... \n\nallow {\n    input.path = "Function App"\n}',
+            VNet: 'template for Azure VNet service... \n\nallow {\n    input.path = "VNet"\n}',
+            'Key Vault': 'template for Azure Key Vault service... \n\nallow {\n    input.path = "Key Vault"\n}',
+        },
+        GCP: {
+            'Cloud Storage': 'template for GCP Cloud Storage service... \n\nallow {\n    input.path = "Cloud Storage"\n}',
+            GKE: 'template for GCP GKE service... \n\nallow {\n    input.path = "GKE"\n}',
+            'Cloud Functions': 'template for GCP Cloud Functions service... \n\nallow {\n    input.path = "Cloud Functions"\n}',
+            VPC: 'template for GCP VPC service... \n\nallow {\n    input.path = "VPC"\n}',
+            IAM: 'template for GCP IAM service... \n\nallow {\n    input.path = "IAM"\n}',
+        },
+    };
+
+    return templates[provider][service] || 'Template not found.';
 }
 
 module.exports = showCloudServiceSelection;
