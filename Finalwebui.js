@@ -57,13 +57,15 @@ function getWebviewContent() {
                 h1 {
                     color: #61afef;
                 }
-                pre {
+                #output {
                     background: #282c34;
                     color: #abb2bf;
                     padding: 10px;
                     border-radius: 5px;
                     overflow: auto;
                     white-space: pre-wrap;
+                    height: 300px; /* Set height for the output box */
+                    margin-top: 20px; /* Add margin for spacing */
                 }
             </style>
         </head>
@@ -73,7 +75,7 @@ function getWebviewContent() {
             <input type="file" id="jsonFile" accept=".json" />
             <input type="text" id="policyType" placeholder="Enter policy type (e.g., data.example.allow)" />
             <button id="run">Run OPA Validation</button>
-            <pre id="output"></pre>
+            <div id="output"></div> <!-- Output box -->
             <script>
                 const vscode = acquireVsCodeApi();
 
@@ -109,6 +111,13 @@ function getWebviewContent() {
                         reader.readAsText(file);
                     });
                 }
+
+                window.addEventListener('message', event => {
+                    const message = event.data;
+                    if (message.output) {
+                        document.getElementById('output').innerText = message.output;
+                    }
+                });
             </script>
         </body>
         </html>`;
