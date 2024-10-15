@@ -143,12 +143,13 @@ async function runOPAEval(regoContent, jsonContent, policyType, panel) {
     formData.append('jsonFile', new Blob([jsonContent], { type: 'application/json' }), 'temp_plan.json');
     formData.append('policyInput', policyType); // Send the policy type
 
+    // Manually set the headers for FormData
+    const headers = {
+        'Content-Type': 'multipart/form-data',
+    };
+
     try {
-        const response = await axios.post('http://localhost:5000/evaluate', formData, {
-            headers: {
-                ...formData.getHeaders(),
-            },
-        });
+        const response = await axios.post('http://localhost:5000/evaluate', formData, { headers });
 
         panel.webview.postMessage({ output: response.data.output }); // Send the output back to the webview
     } catch (error) {
