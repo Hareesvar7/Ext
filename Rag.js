@@ -46,32 +46,17 @@ function getWebviewContent() {
                 }
                 h1 {
                     color: #61afef;
-                    margin-bottom: 20px; /* Add margin to separate title from buttons */
+                    margin-bottom: 20px; /* Add margin to separate title from dropdowns */
                 }
-                .providers, .services {
-                    display: flex;
-                    justify-content: center;
-                    gap: 10px;
-                    margin-bottom: 20px;
-                    flex-wrap: wrap; 
-                }
-                .provider-button, .service-button {
-                    background-color: white;
-                    color: #007acc;
-                    border: none;
-                    padding: 15px;
-                    cursor: pointer;
-                    border-radius: 5px;
-                    flex: 1;
+                select {
+                    padding: 10px;
                     margin: 10px;
-                    transition: background-color 0.3s, color 0.3s;
-                    max-width: 150px;
-                    text-align: center;
-                    box-shadow: 0px 4px 6px rgba(0,0,0,0.1);
-                }
-                .provider-button:hover, .service-button:hover {
-                    background-color: #007acc;
-                    color: white;
+                    border-radius: 5px;
+                    border: 1px solid #007acc;
+                    background-color: white;
+                    color: black;
+                    width: 200px; /* Set fixed width for dropdowns */
+                    font-size: 16px;
                 }
                 .output-box {
                     background-color: white;
@@ -89,34 +74,57 @@ function getWebviewContent() {
         </head>
         <body>
             <h1>NIST Management Policies</h1>
-            <div class="providers">
-                <button class="provider-button" onclick="selectProvider('AWS')">AWS</button>
-                <button class="provider-button" onclick="selectProvider('Azure')">Azure</button>
-                <button class="provider-button" onclick="selectProvider('GCP')">GCP</button>
-            </div>
-            <div class="services"></div>
+            <select id="cloudProvider" onchange="updateServices()">
+                <option value="">Select Cloud Provider</option>
+                <option value="AWS">AWS</option>
+                <option value="Azure">Azure</option>
+                <option value="GCP">GCP</option>
+            </select>
+
+            <select id="cloudService" onchange="serviceSelected()" disabled>
+                <option value="">Select Service</option>
+            </select>
+            
             <div class="output-box" id="outputBox"></div>
 
             <script>
-                function selectProvider(provider) {
-                    const servicesMap = {
-                        AWS: ['EFS', 'EKS', 'S3', 'VPC', 'IAM', 'LAMBDA'],
-                        Azure: ['Blob Storage', 'AKS', 'Function App', 'VNet', 'Key Vault'],
-                        GCP: ['Cloud Storage', 'GKE', 'Cloud Functions', 'VPC', 'IAM'],
-                    };
-                    const services = servicesMap[provider];
-                    const servicesContainer = document.querySelector('.services');
-                    servicesContainer.innerHTML = ''; // Clear previous buttons
+                const servicesMap = {
+                    AWS: ['EFS', 'EKS', 'S3', 'VPC', 'IAM', 'LAMBDA'],
+                    Azure: ['Blob Storage', 'AKS', 'Function App', 'VNet', 'Key Vault'],
+                    GCP: ['Cloud Storage', 'GKE', 'Cloud Functions', 'VPC', 'IAM'],
+                };
 
-                    services.forEach(service => {
-                        const button = document.createElement('button');
-                        button.className = 'service-button';
-                        button.textContent = service;
-                        button.onclick = () => {
-                            vscode.postMessage({ command: 'serviceSelected', provider, service });
-                        };
-                        servicesContainer.appendChild(button);
-                    });
+                function updateServices() {
+                    const providerSelect = document.getElementById('cloudProvider');
+                    const serviceSelect = document.getElementById('cloudService');
+                    const selectedProvider = providerSelect.value;
+
+                    // Clear previous options
+                    serviceSelect.innerHTML = '<option value="">Select Service</option>';
+                    serviceSelect.disabled = false; // Enable service dropdown
+
+                    if (selectedProvider) {
+                        const services = servicesMap[selectedProvider];
+                        services.forEach(service => {
+                            const option = document.createElement('option');
+                            option.value = service;
+                            option.textContent = service;
+                            serviceSelect.appendChild(option);
+                        });
+                    } else {
+                        serviceSelect.disabled = true; // Disable service dropdown if no provider is selected
+                    }
+                }
+
+                function serviceSelected() {
+                    const providerSelect = document.getElementById('cloudProvider');
+                    const serviceSelect = document.getElementById('cloudService');
+                    const provider = providerSelect.value;
+                    const service = serviceSelect.value;
+
+                    if (provider && service) {
+                        vscode.postMessage({ command: 'serviceSelected', provider, service });
+                    }
                 }
 
                 window.addEventListener('message', event => {
