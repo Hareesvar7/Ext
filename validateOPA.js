@@ -30,21 +30,102 @@ async function validateOPA() {
 
     const jsonFilePath = jsonFileUri[0].fsPath;
 
-    // Execute the OPA command
-    const opaCommand = `opa eval -i ${jsonFilePath} -d ${regoFilePath} "data.example.allow"`;
+    // Show a webview for entering the policy type
+    showPolicyTypeInputWebview(regoFilePath, jsonFilePath);
+}
 
-    exec(opaCommand, (error, stdout, stderr) => {
-        if (error) {
-            console.error(`Error: ${stderr}`);
-            vscode.window.showErrorMessage('Error evaluating the policy.');
-            return;
+// Function to show the policy type input webview
+function showPolicyTypeInputWebview(regoFilePath, jsonFilePath) {
+    const panel = vscode.window.createWebviewPanel(
+        'policyTypeInput', // Identifies the type of the webview
+        'Enter Policy Type', // Title of the panel
+        vscode.ViewColumn.One, // Show the panel in the first column
+        {
+            enableScripts: true, // Allow scripts in the webview
         }
+    );
 
-        // Show results in a webview
-        showResultsInWebview(stdout);
+    // Set the HTML content of the webview
+    panel.webview.html = getPolicyTypeInputWebviewContent();
+
+    // Handle the message from the webview
+    panel.webview.onDidReceiveMessage(async (message) => {
+        if (message.command === 'evaluate') {
+            const policyType = message.policyType;
+            // Execute the OPA command with the user-provided policy type
+            const opaCommand = `opa eval -i ${jsonFilePath} -d ${regoFilePath} "${policyType}"`;
+
+            exec(opaCommand, (error, stdout, stderr) => {
+                if (error) {
+                    console.error(`Error: ${stderr}`);
+                    vscode.window.showErrorMessage('Error evaluating the policy.');
+                    return;
+                }
+
+                // Show results in a webview
+                showResultsInWebview(stdout);
+            });
+        }
     });
 }
 
+// Function to get the HTML content for policy type input
+function getPolicyTypeInputWebviewContent() {
+    return `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Enter Policy Type</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    padding: 20px;
+                    background-color: #1e1e1e;
+                    color: #d4d4d4;
+                }
+                input {
+                    padding: 10px;
+                    width: 100%;
+                    margin-top: 10px;
+                    border-radius: 5px;
+                    border: 1px solid #444;
+                }
+                button {
+                    background-color: #007acc;
+                    color: white;
+                    border: none;
+                    padding: 10px;
+                    margin-top: 20px;
+                    border-radius: 5px;
+                    cursor: pointer;
+                }
+                button:hover {
+                    background-color: #005a9c;
+                }
+            </style>
+        </head>
+        <body>
+            <h1>Enter Policy Type</h1>
+            <input type="text" id="policyType" placeholder="Enter policy type (e.g., data.example.allow)" />
+            <button id="evaluate">Evaluate Policy</button>
+            <script>
+                const vscode = acquireVsCodeApi();
+
+                document.getElementById('evaluate').onclick = () => {
+                    const policyType = document.getElementById('policyType').value;
+                    vscode.postMessage({
+                        command: 'evaluate',
+                        policyType
+                    });
+                };
+            </script>
+        </body>
+        </html>`;
+}
+
+// Function to show results in a webview
 function showResultsInWebview(output) {
     const panel = vscode.window.createWebviewPanel(
         'opaResults', // Identifies the type of the webview
@@ -59,6 +140,7 @@ function showResultsInWebview(output) {
     panel.webview.html = getWebviewContent(output);
 }
 
+// Function to get the HTML content for displaying results
 function getWebviewContent(output) {
     return `
         <!DOCTYPE html>
