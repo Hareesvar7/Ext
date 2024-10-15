@@ -1,6 +1,6 @@
 const vscode = require('vscode');
 
-async function showCloudServiceSelection() {
+async function showCloudServiceSelection(context) {
     const panel = vscode.window.createWebviewPanel(
         'cloudServiceSelection', // Identifies the type of the webview
         'Select Cloud Service',  // Title of the panel
@@ -24,7 +24,7 @@ async function showCloudServiceSelection() {
             }
         },
         undefined,
-        context.subscriptions
+        context.subscriptions // Use context.subscriptions here
     );
 }
 
