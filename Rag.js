@@ -43,32 +43,65 @@ function getWebviewContent() {
                     background-color: #1e1e1e;
                     color: #d4d4d4;
                 }
-                button {
-                    background-color: #007acc;
-                    color: white;
-                    border: none;
-                    padding: 10px 20px;
-                    margin: 5px;
-                    cursor: pointer;
-                    border-radius: 5px;
-                }
-                button:hover {
-                    background-color: #005a9c;
-                }
                 h1 {
                     color: #61afef;
                 }
+                .providers {
+                    display: flex;
+                    justify-content: space-around;
+                    margin-bottom: 20px;
+                }
+                .provider-button {
+                    background-color: #007acc;
+                    color: white;
+                    border: none;
+                    padding: 15px;
+                    cursor: pointer;
+                    border-radius: 5px;
+                    flex: 1;
+                    margin: 0 10px;
+                    transition: background-color 0.3s;
+                }
+                .provider-button:hover {
+                    background-color: #005a9c;
+                }
                 .services {
                     margin-top: 20px;
+                }
+                .service-button {
+                    background-color: #444;
+                    color: #d4d4d4;
+                    border: none;
+                    padding: 10px;
+                    cursor: pointer;
+                    border-radius: 5px;
+                    margin: 5px 0;
+                    transition: background-color 0.3s;
+                    display: block;
+                    text-align: left;
+                }
+                .service-button:hover {
+                    background-color: #555;
+                }
+                .template {
+                    margin-top: 20px;
+                }
+                pre {
+                    background: #282c34;
+                    color: #abb2bf;
+                    padding: 10px;
+                    border-radius: 5px;
+                    overflow: auto;
+                    white-space: pre-wrap; /* Ensures long lines are wrapped */
                 }
             </style>
         </head>
         <body>
             <h1>Select Cloud Provider</h1>
             <div class="providers">
-                <button onclick="selectProvider('AWS')">AWS</button>
-                <button onclick="selectProvider('Azure')">Azure</button>
-                <button onclick="selectProvider('GCP')">GCP</button>
+                <button class="provider-button" onclick="selectProvider('AWS')">AWS</button>
+                <button class="provider-button" onclick="selectProvider('Azure')">Azure</button>
+                <button class="provider-button" onclick="selectProvider('GCP')">GCP</button>
             </div>
             <div class="services"></div>
 
@@ -84,6 +117,7 @@ function getWebviewContent() {
                     servicesContainer.innerHTML = '<h2>Select Service</h2>';
                     services.forEach(service => {
                         const button = document.createElement('button');
+                        button.className = 'service-button';
                         button.textContent = service;
                         button.onclick = () => {
                             vscode.postMessage({ command: 'serviceSelected', provider, service });
@@ -96,7 +130,10 @@ function getWebviewContent() {
                     const message = event.data;
                     switch (message.command) {
                         case 'showTemplate':
-                            document.body.innerHTML = '<h1>Service Template</h1><pre>' + message.template + '</pre>';
+                            const templateContainer = document.createElement('div');
+                            templateContainer.className = 'template';
+                            templateContainer.innerHTML = '<h2>Service Template</h2><pre>' + message.template + '</pre>';
+                            document.body.appendChild(templateContainer);
                             break;
                     }
                 });
