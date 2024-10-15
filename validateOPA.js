@@ -1,8 +1,7 @@
 const vscode = require('vscode');
-const { exec } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+const axios = require('axios');
 
+// Function to create the validation panel
 async function validateOPA() {
     const panel = vscode.window.createWebviewPanel(
         'opaValidation', // Identifies the type of the webview
@@ -15,7 +14,8 @@ async function validateOPA() {
 
     panel.webview.html = getWebviewContent();
 
-    panel.webview.onDidReceiveMessage(async message => {
+    // Handle messages from the webview
+    panel.webview.onDidReceiveMessage(async (message) => {
         switch (message.command) {
             case 'runOPA':
                 await runOPAEval(message.regoContent, message.jsonContent, message.policyType, panel);
@@ -24,6 +24,7 @@ async function validateOPA() {
     });
 }
 
+// Function to get the HTML content for the webview
 function getWebviewContent() {
     return `
         <!DOCTYPE html>
@@ -129,42 +130,30 @@ function getWebviewContent() {
         </html>`;
 }
 
+// Function to handle OPA evaluation
 async function runOPAEval(regoContent, jsonContent, policyType, panel) {
     if (!regoContent || !jsonContent || !policyType) {
         vscode.window.showErrorMessage('Please provide the contents of the .rego and .json files and enter a policy type.');
         return;
     }
 
-    // Create temporary files to store the content
-    const regoFilePath = path.join(__dirname, 'temp.rego');
-    const jsonFilePath = path.join(__dirname, 'temp.json');
+    // Prepare the request payload
+    const formData = new FormData();
+    formData.append('regoFile', new Blob([regoContent], { type: 'text/plain' }), 'temp_policy.rego');
+    formData.append('jsonFile', new Blob([jsonContent], { type: 'application/json' }), 'temp_plan.json');
+    formData.append('policyInput', policyType); // Send the policy type
 
     try {
-        await fs.promises.writeFile(regoFilePath, regoContent);
-        await fs.promises.writeFile(jsonFilePath, jsonContent);
-
-        const opaCommand = `opa eval -i ${jsonFilePath} -d ${regoFilePath} "${policyType}"`;
-
-        exec(opaCommand, async (error, stdout, stderr) => {
-            try {
-                // Clean up temporary files after execution
-                await fs.promises.unlink(regoFilePath);
-                await fs.promises.unlink(jsonFilePath);
-            } catch (cleanupError) {
-                console.error(`Error cleaning up temporary files: ${cleanupError}`);
-            }
-
-            if (error) {
-                console.error(`Error: ${stderr}`);
-                panel.webview.postMessage({ output: 'Error evaluating the policy.' });
-                return;
-            }
-
-            panel.webview.postMessage({ output: stdout });
+        const response = await axios.post('http://localhost:5000/evaluate', formData, {
+            headers: {
+                ...formData.getHeaders(),
+            },
         });
-    } catch (writeError) {
-        vscode.window.showErrorMessage('Error writing temporary files.');
-        console.error(`Error: ${writeError}`);
+
+        panel.webview.postMessage({ output: response.data.output }); // Send the output back to the webview
+    } catch (error) {
+        console.error("Error during OPA evaluation:", error);
+        panel.webview.postMessage({ output: 'Error evaluating the policy.' });
     }
 }
 
