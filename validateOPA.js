@@ -67,6 +67,10 @@ function getWebviewContent() {
                     height: 300px; /* Set height for the output box */
                     margin-top: 20px; /* Add margin for spacing */
                 }
+                .loading {
+                    color: yellow;
+                    font-weight: bold;
+                }
             </style>
         </head>
         <body>
@@ -95,6 +99,8 @@ function getWebviewContent() {
                     const regoContent = await readFileContent(regoFile);
                     const jsonContent = await readFileContent(jsonFile);
 
+                    document.getElementById('output').innerHTML = '<div class="loading">Running OPA validation...</div>';
+                    
                     vscode.postMessage({
                         command: 'runOPA',
                         regoContent,
@@ -133,24 +139,33 @@ async function runOPAEval(regoContent, jsonContent, policyType, panel) {
     const regoFilePath = path.join(__dirname, 'temp.rego');
     const jsonFilePath = path.join(__dirname, 'temp.json');
 
-    fs.writeFileSync(regoFilePath, regoContent);
-    fs.writeFileSync(jsonFilePath, jsonContent);
+    try {
+        await fs.promises.writeFile(regoFilePath, regoContent);
+        await fs.promises.writeFile(jsonFilePath, jsonContent);
 
-    const opaCommand = `opa eval -i ${jsonFilePath} -d ${regoFilePath} "${policyType}"`;
+        const opaCommand = `opa eval -i ${jsonFilePath} -d ${regoFilePath} "${policyType}"`;
 
-    exec(opaCommand, (error, stdout, stderr) => {
-        // Clean up temporary files after execution
-        fs.unlinkSync(regoFilePath);
-        fs.unlinkSync(jsonFilePath);
+        exec(opaCommand, async (error, stdout, stderr) => {
+            try {
+                // Clean up temporary files after execution
+                await fs.promises.unlink(regoFilePath);
+                await fs.promises.unlink(jsonFilePath);
+            } catch (cleanupError) {
+                console.error(`Error cleaning up temporary files: ${cleanupError}`);
+            }
 
-        if (error) {
-            console.error(`Error: ${stderr}`);
-            panel.webview.postMessage({ output: 'Error evaluating the policy.' });
-            return;
-        }
+            if (error) {
+                console.error(`Error: ${stderr}`);
+                panel.webview.postMessage({ output: 'Error evaluating the policy.' });
+                return;
+            }
 
-        panel.webview.postMessage({ output: stdout });
-    });
+            panel.webview.postMessage({ output: stdout });
+        });
+    } catch (writeError) {
+        vscode.window.showErrorMessage('Error writing temporary files.');
+        console.error(`Error: ${writeError}`);
+    }
 }
 
 module.exports = validateOPA;
