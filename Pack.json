@@ -1,0 +1,16 @@
+"contributes": {
+    "commands": [
+        {
+            "command": "extension.validateOPA",
+            "title": "Validate OPA"
+        },
+        {
+            "command": "extension.aiAssistant",
+            "title": "AI Assistant"
+        }
+    ]
+},
+"activationEvents": [
+    "onCommand:extension.validateOPA",
+    "onCommand:extension.aiAssistant"
+]
