@@ -11,22 +11,31 @@ const execCommand = (command, callback) => {
 // Command to evaluate OPA policies
 function validateOPA() {
     vscode.window.showOpenDialog({
-        canSelectMany: false,
+        canSelectMany: true,
         filters: {
             'JSON files': ['json'],
             'Rego files': ['rego']
         }
-    }).then(fileUri => {
-        if (!fileUri || fileUri.length < 2) {
-            vscode.window.showErrorMessage("You need to select both a Rego file and a JSON file.");
+    }).then(fileUris => {
+        if (!fileUris || fileUris.length < 2) {
+            vscode.window.showErrorMessage("You need to select at least one Rego file and one JSON file.");
             return;
         }
-        
-        const regoFilePath = fileUri[0].fsPath;
-        const jsonFilePath = fileUri[1].fsPath;
-        const policyInput = "data.example.allow"; // Example input; prompt user for this if needed
 
-        const opaCommand = `opa eval -i ${jsonFilePath} -d ${regoFilePath} "${policyInput}"`;
+        // Separate selected files into Rego and JSON files
+        const regoFilePath = fileUris.find(fileUri => fileUri.fsPath.endsWith('.rego'));
+        const jsonFilePath = fileUris.find(fileUri => fileUri.fsPath.endsWith('.json'));
+
+        if (!regoFilePath || !jsonFilePath) {
+            vscode.window.showErrorMessage("You must select one Rego file and one JSON file.");
+            return;
+        }
+
+        // Define the policy input (this could also be user-defined)
+        const policyInput = "data.example.allow"; // Example policy input; adjust as necessary
+
+        // Command to evaluate OPA
+        const opaCommand = `opa eval -i ${jsonFilePath.fsPath} -d ${regoFilePath.fsPath} "${policyInput}"`;
 
         execCommand(opaCommand, (error, stdout, stderr) => {
             if (error) {
