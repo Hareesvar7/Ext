@@ -17,7 +17,8 @@ async function showCloudServiceSelection(context) {
             switch (message.command) {
                 case 'serviceSelected':
                     const template = getServiceTemplate(message.provider, message.service);
-                    panel.webview.postMessage({ command: 'showTemplate', template });
+                    // Show the template as a notification instead of in an output box
+                    vscode.window.showInformationMessage(`Template for ${message.provider} ${message.service}:\n${template}`);
                     break;
             }
         },
@@ -58,18 +59,6 @@ function getWebviewContent() {
                     width: 200px; /* Set fixed width for dropdowns */
                     font-size: 16px;
                 }
-                .output-box {
-                    background-color: white;
-                    color: black;
-                    padding: 10px;
-                    border-radius: 5px;
-                    margin-top: 20px;
-                    overflow: auto;
-                    height: 200px;
-                    width: 100%; /* Ensure it takes the full width */
-                    white-space: pre-wrap;
-                    box-shadow: 0px 4px 6px rgba(0,0,0,0.1);
-                }
             </style>
         </head>
         <body>
@@ -84,8 +73,6 @@ function getWebviewContent() {
             <select id="cloudService" onchange="serviceSelected()" disabled>
                 <option value="">Select Service</option>
             </select>
-            
-            <div class="output-box" id="outputBox"></div>
 
             <script>
                 const servicesMap = {
@@ -126,16 +113,6 @@ function getWebviewContent() {
                         vscode.postMessage({ command: 'serviceSelected', provider, service });
                     }
                 }
-
-                window.addEventListener('message', event => {
-                    const message = event.data;
-                    switch (message.command) {
-                        case 'showTemplate':
-                            const outputBox = document.getElementById('outputBox');
-                            outputBox.innerHTML = '<h2>Service Template</h2><pre>' + message.template + '</pre>';
-                            break;
-                    }
-                });
             </script>
         </body>
         </html>`;
