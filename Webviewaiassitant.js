@@ -38,7 +38,8 @@ class AIWebView {
                     body { font-family: sans-serif; padding: 20px; }
                     textarea { width: 100%; height: 100px; }
                     button { margin-top: 10px; }
-                    .response { margin-top: 20px; }
+                    .response { margin-top: 20px; border: 1px solid #ccc; padding: 10px; border-radius: 5px; background-color: #f9f9f9; }
+                    .error { color: red; }
                 </style>
             </head>
             <body>
@@ -51,6 +52,18 @@ class AIWebView {
                     document.getElementById('submit').addEventListener('click', () => {
                         const prompt = document.getElementById('prompt').value;
                         vscode.postMessage({ command: 'submitPrompt', prompt: prompt });
+                    });
+
+                    // Listen for messages from the extension
+                    window.addEventListener('message', (event) => {
+                        const message = event.data;
+                        const responseDiv = document.getElementById('response');
+
+                        if (message.command === 'displayResponse') {
+                            responseDiv.innerHTML = '<strong>AI Response:</strong><br>' + message.response;
+                        } else if (message.command === 'displayError') {
+                            responseDiv.innerHTML = '<strong class="error">Error:</strong> ' + message.error;
+                        }
                     });
                 </script>
             </body>
