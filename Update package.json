@@ -1,0 +1,11 @@
+"contributes": {
+    "commands": [
+        {
+            "command": "extension.validateOPA",
+            "title": "Validate OPA"
+        }
+    ]
+},
+"activationEvents": [
+    "onCommand:extension.validateOPA"
+]
