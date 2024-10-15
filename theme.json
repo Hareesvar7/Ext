@@ -1,58 +1,32 @@
 {
-    "name": "My Custom Theme",
+    "$schema": "vscode://schemas/color-theme",
+    "name": "My OPA AI Theme",
     "type": "dark",
     "colors": {
         "editor.background": "#1e1e1e",
         "editor.foreground": "#d4d4d4",
-        "editorCursor.foreground": "#528bff",
+        "editorCursor.foreground": "#d4d4d4",
         "editor.lineHighlightBackground": "#2a2a2a",
-        "editor.selectionBackground": "#264f78",
-        "editor.selectionForeground": "#ffffff",
-        "editor.wordHighlightBackground": "#575757",
-        "editor.wordHighlightBorder": "#d7ba7d",
-        "activityBar.background": "#333333",
-        "activityBar.foreground": "#ffffff",
-        "sideBar.background": "#252526",
-        "sideBar.foreground": "#ffffff",
-        "titleBar.activeBackground": "#007acc",
-        "titleBar.activeForeground": "#ffffff",
-        "statusBar.background": "#007acc",
-        "statusBar.foreground": "#ffffff",
-        "button.background": "#007acc",
-        "button.foreground": "#ffffff",
-        "input.background": "#333333",
-        "input.foreground": "#ffffff"
+        "editorLineNumber.foreground": "#5a5a5a",
+        "notification.background": "#323232",
+        "notification.foreground": "#ffffff",
+        "notification.buttonBackground": "#007acc",
+        "notification.buttonHoverBackground": "#005a9c",
+        "notification.infoBackground": "#007acc",
+        "notification.warningBackground": "#e7c600",
+        "notification.errorBackground": "#d9534f"
     },
     "tokenColors": [
         {
-            "scope": ["comment", "comment.block"],
+            "scope": "comment",
             "settings": {
-                "foreground": "#608b4f",
-                "fontStyle": "italic"
+                "foreground": "#608b4e"
             }
         },
         {
-            "scope": ["keyword", "keyword.control"],
+            "scope": "keyword",
             "settings": {
                 "foreground": "#569cd6"
-            }
-        },
-        {
-            "scope": ["variable", "variable.other"],
-            "settings": {
-                "foreground": "#9cdcfe"
-            }
-        },
-        {
-            "scope": ["string", "string.quoted"],
-            "settings": {
-                "foreground": "#ce9178"
-            }
-        },
-        {
-            "scope": ["constant.numeric"],
-            "settings": {
-                "foreground": "#b5cea8"
             }
         }
     ]
