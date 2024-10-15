@@ -1,0 +1,33 @@
+{
+    "name": "my-extension",
+    "displayName": "My Extension",
+    "description": "A VS Code extension for OPA validation and cloud service templates.",
+    "version": "0.0.1",
+    "publisher": "yourname",
+    "engines": {
+        "vscode": "^1.56.0"
+    },
+    "activationEvents": [
+        "onCommand:extension.validateOPA",
+        "onCommand:extension.showCloudServices" // Add this line
+    ],
+    "main": "./extension.js",
+    "contributes": {
+        "commands": [
+            {
+                "command": "extension.validateOPA",
+                "title": "Validate OPA"
+            },
+            {
+                "command": "extension.showCloudServices", // Add this command
+                "title": "Show Cloud Services"
+            }
+        ]
+    },
+    "scripts": {
+        "vscode:prepublish": "npx gulp build"
+    },
+    "devDependencies": {
+        "typescript": "^4.0.0"
+    }
+}
