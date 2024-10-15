@@ -4,178 +4,203 @@ const fs = require('fs');
 const path = require('path');
 
 async function validateOPA() {
-    const panel = vscode.window.createWebviewPanel(
-        'opaValidator', 
-        'OPA Validator', 
-        vscode.ViewColumn.One, 
-        { enableScripts: true }
-    );
+    // Show file picker to select the .rego file
+    const regoFileUri = await vscode.window.showOpenDialog({
+        canSelectMany: false,
+        filters: { 'Rego Files': ['rego'] },
+    });
 
-    // Load webview content
-    panel.webview.html = getWebviewContent();
+    if (!regoFileUri || regoFileUri.length === 0) {
+        vscode.window.showErrorMessage('No file selected.');
+        return;
+    }
 
-    // Handle messages from the webview
-    panel.webview.onDidReceiveMessage(
-        (message) => {
-            if (message.command === 'submitFiles') {
-                const regoContent = message.regoContent;
-                const jsonContent = message.jsonContent;
-                const query = message.query; // Get the user input query
+    const regoFilePath = regoFileUri[0].fsPath;
 
-                // Create temporary files for the received content
-                const regoTempPath = path.join(__dirname, 'tempPolicy.rego');
-                const jsonTempPath = path.join(__dirname, 'tempInput.json');
+    // Show file picker to select the input JSON file
+    const jsonFileUri = await vscode.window.showOpenDialog({
+        canSelectMany: false,
+        filters: { 'JSON Files': ['json'] },
+    });
 
-                fs.writeFileSync(regoTempPath, regoContent);
-                fs.writeFileSync(jsonTempPath, jsonContent);
+    if (!jsonFileUri || jsonFileUri.length === 0) {
+        vscode.window.showErrorMessage('No file selected.');
+        return;
+    }
 
-                // Build the OPA command with the user-defined query
-                const opaCommand = `opa eval -i ${jsonTempPath} -d ${regoTempPath} "${query}"`;
+    const jsonFilePath = jsonFileUri[0].fsPath;
 
-                // Execute the OPA command
-                exec(opaCommand, (error, stdout, stderr) => {
-                    if (error) {
-                        panel.webview.postMessage({ command: 'displayError', error: stderr });
-                        return;
-                    }
-
-                    panel.webview.postMessage({ command: 'displayResponse', response: stdout });
-                });
-            }
-        },
-        undefined,
-        []
-    );
+    // Show webview to get the policy type from the user
+    showPolicyInputWebview(regoFilePath, jsonFilePath);
 }
 
-// Function to generate the webview content
-function getWebviewContent() {
-    return `<!DOCTYPE html>
+function showPolicyInputWebview(regoFilePath, jsonFilePath) {
+    const panel = vscode.window.createWebviewPanel(
+        'policyInput', // Identifies the type of the webview
+        'Input Policy Type', // Title of the panel
+        vscode.ViewColumn.One, // Show the panel in the first column
+        {
+            enableScripts: true, // Allow scripts in the webview
+        }
+    );
+
+    // Set the HTML content of the webview
+    panel.webview.html = getPolicyInputWebviewContent(regoFilePath, jsonFilePath);
+}
+
+function getPolicyInputWebviewContent(regoFilePath, jsonFilePath) {
+    return `
+        <!DOCTYPE html>
         <html lang="en">
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>OPA Validator</title>
+            <title>Input Policy Type</title>
             <style>
                 body {
-                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    font-family: Arial, sans-serif;
                     padding: 20px;
-                    background-color: #f4f7fa;
-                    color: #333;
+                    background-color: #1e1e1e;
+                    color: #d4d4d4;
                 }
-                h1 {
-                    font-size: 24px;
-                    color: #4A90E2;
-                    text-align: center;
-                    margin-bottom: 20px;
-                }
-                label {
-                    font-size: 16px;
-                    color: #333;
-                    margin-bottom: 10px;
-                    display: block;
-                }
-                input[type="file"], input[type="text"] {
-                    font-size: 16px;
-                    padding: 8px;
-                    border: 1px solid #d1d5db;
-                    border-radius: 8px;
-                    background-color: #fff;
-                    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-                    transition: all 0.3s ease;
-                    margin-bottom: 20px;
-                    display: block;
+                input {
                     width: 100%;
+                    padding: 10px;
+                    margin-top: 10px;
+                    border-radius: 5px;
+                    border: 1px solid #444;
                 }
                 button {
+                    padding: 10px;
+                    margin-top: 20px;
                     width: 100%;
-                    padding: 12px;
-                    margin-top: 10px;
-                    background-color: #4A90E2;
-                    color: #fff;
-                    font-size: 16px;
+                    border-radius: 5px;
                     border: none;
-                    border-radius: 8px;
-                    cursor: pointer;
-                    transition: background-color 0.3s ease;
+                    background-color: #007acc;
+                    color: white;
                 }
                 button:hover {
-                    background-color: #357ABD;
+                    background-color: #005a9c;
                 }
-                .response {
-                    margin-top: 20px;
-                    padding: 20px;
-                    border-radius: 8px;
-                    background-color: #ffffff;
-                    border: 1px solid #d1d5db;
-                    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-                    max-height: 400px;
-                    overflow-y: auto;
-                    white-space: pre-wrap;
-                    font-size: 16px;
-                    color: #333;
-                }
-                .error {
-                    color: red;
-                    font-weight: bold;
+                h1 {
+                    color: #61afef;
                 }
             </style>
         </head>
         <body>
-            <h1>OPA Validator</h1>
-            <label for="regoFile">Select Rego File:</label>
-            <input type="file" id="regoFile" accept=".rego">
-            <label for="jsonFile">Select JSON Input File:</label>
-            <input type="file" id="jsonFile" accept=".json">
-            <label for="query">Enter OPA Query (e.g., data.example.deny):</label>
-            <input type="text" id="query" placeholder="Enter OPA query..." value="data.example.deny">
-            <button id="submit">Validate Policy</button>
-            <div class="response" id="response"></div>
+            <h1>Input Policy Type</h1>
+            <input type="text" id="policyType" placeholder="Enter policy type (e.g., data.example.allow)" />
+            <button id="run">Run OPA Validation</button>
             <script>
                 const vscode = acquireVsCodeApi();
-                document.getElementById('submit').addEventListener('click', () => {
-                    const regoFileInput = document.getElementById('regoFile').files[0];
-                    const jsonFileInput = document.getElementById('jsonFile').files[0];
-                    const queryInput = document.getElementById('query').value; // Get the query input
 
-                    if (!regoFileInput || !jsonFileInput) {
-                        vscode.postMessage({ command: 'displayError', error: 'Both files must be selected.' });
+                document.getElementById('run').onclick = () => {
+                    const policyType = document.getElementById('policyType').value;
+
+                    if (!policyType) {
+                        alert('Please enter a policy type.');
                         return;
                     }
 
-                    const reader = new FileReader();
+                    // Send message to main process to run OPA evaluation
+                    vscode.postMessage({
+                        command: 'runOPA',
+                        policyType
+                    });
+                };
+            </script>
+        </body>
+        </html>`;
+}
 
-                    reader.onload = function(event) {
-                        const regoFileContent = event.target.result;
+async function runOPAEval(regoFilePath, jsonFilePath, policyType, panel) {
+    if (!policyType) {
+        vscode.window.showErrorMessage('Please provide a policy type.');
+        return;
+    }
 
-                        const jsonReader = new FileReader();
-                        jsonReader.onload = function(e) {
-                            const jsonFileContent = e.target.result;
+    // Execute the OPA command
+    const opaCommand = `opa eval -i ${jsonFilePath} -d ${regoFilePath} "${policyType}"`;
 
-                            vscode.postMessage({
-                                command: 'submitFiles',
-                                regoContent: regoFileContent,
-                                jsonContent: jsonFileContent,
-                                query: queryInput // Send the query to the extension
-                            });
-                        };
-                        jsonReader.readAsText(jsonFileInput);
-                    };
+    exec(opaCommand, (error, stdout, stderr) => {
+        if (error) {
+            console.error(`Error: ${stderr}`);
+            vscode.window.showErrorMessage('Error evaluating the policy.');
+            return;
+        }
 
-                    reader.readAsText(regoFileInput);
-                });
+        // Show results in a webview
+        showResultsInWebview(stdout);
+    });
+}
 
-                // Listen for messages from the extension
-                window.addEventListener('message', (event) => {
-                    const message = event.data;
-                    const responseDiv = document.getElementById('response');
+function showResultsInWebview(output) {
+    const panel = vscode.window.createWebviewPanel(
+        'opaResults', // Identifies the type of the webview
+        'OPA Validation Results', // Title of the panel
+        vscode.ViewColumn.One, // Show the panel in the first column
+        {
+            enableScripts: true, // Allow scripts in the webview
+        }
+    );
 
-                    if (message.command === 'displayResponse') {
-                        responseDiv.innerHTML = '<strong>OPA Validation Results:</strong><br>' + message.response;
-                    } else if (message.command === 'displayError') {
-                        responseDiv.innerHTML = '<strong class="error">Error:</strong> ' + message.error;
-                    }
-                });
+    // Set the HTML content of the webview
+    panel.webview.html = getWebviewContent(output);
+}
+
+function getWebviewContent(output) {
+    return `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>OPA Validation Results</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    padding: 20px;
+                    background-color: #1e1e1e;
+                    color: #d4d4d4;
+                }
+                pre {
+                    background: #282c34;
+                    color: #abb2bf;
+                    padding: 10px;
+                    border-radius: 5px;
+                    overflow: auto;
+                    white-space: pre-wrap; /* Ensures long lines are wrapped */
+                }
+                h1 {
+                    color: #61afef;
+                }
+                .button {
+                    background-color: #007acc;
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    margin-top: 20px;
+                    cursor: pointer;
+                    border-radius: 5px;
+                }
+                .button:hover {
+                    background-color: #005a9c;
+                }
+            </style>
+        </head>
+        <body>
+            <h1>OPA Validation Results</h1>
+            <pre>${output}</pre>
+            <button class="button" onclick="copyToClipboard()">Copy to Clipboard</button>
+            <script>
+                function copyToClipboard() {
+                    const outputText = document.querySelector('pre').innerText;
+                    navigator.clipboard.writeText(outputText).then(() => {
+                        alert('Output copied to clipboard!');
+                    }, () => {
+                        alert('Failed to copy output.');
+                    });
+                }
             </script>
         </body>
         </html>`;
