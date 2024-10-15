@@ -1,4 +1,3 @@
-// src/commands/aiAssistant.js
 const vscode = require('vscode');
 const getAIResponse = require('../services/openAIService'); // Adjust import if using TypeScript
 
@@ -36,9 +35,9 @@ class AIWebView {
                 <title>AI Assistant</title>
                 <style>
                     body { font-family: sans-serif; padding: 20px; }
-                    textarea { width: 100%; height: 100px; }
-                    button { margin-top: 10px; }
-                    .response { margin-top: 20px; border: 1px solid #ccc; padding: 10px; border-radius: 5px; background-color: #f9f9f9; }
+                    textarea { width: 100%; height: 100px; font-size: 16px; }
+                    button { margin-top: 10px; padding: 10px; font-size: 16px; cursor: pointer; }
+                    .response { margin-top: 20px; border: 1px solid #ccc; padding: 10px; border-radius: 5px; background-color: #f0f0f0; max-height: 400px; overflow-y: auto; white-space: pre-wrap; font-size: 16px; }
                     .error { color: red; }
                 </style>
             </head>
