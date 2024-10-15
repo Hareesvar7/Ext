@@ -2,11 +2,11 @@ const vscode = require('vscode');
 
 async function showCloudServiceSelection(context) {
     const panel = vscode.window.createWebviewPanel(
-        'cloudServiceSelection', 
-        'Select Cloud Service', 
-        vscode.ViewColumn.One,  
+        'cloudServiceSelection',
+        'NIST Management Policies',
+        vscode.ViewColumn.One,
         {
-            enableScripts: true, 
+            enableScripts: true,
         }
     );
 
@@ -40,9 +40,13 @@ function getWebviewContent() {
                     padding: 20px;
                     background-color: #1e1e1e;
                     color: #d4d4d4;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center; /* Center align the contents */
                 }
                 h1 {
                     color: #61afef;
+                    margin-bottom: 20px; /* Add margin to separate title from buttons */
                 }
                 .providers, .services {
                     display: flex;
@@ -77,13 +81,14 @@ function getWebviewContent() {
                     margin-top: 20px;
                     overflow: auto;
                     height: 200px;
+                    width: 100%; /* Ensure it takes the full width */
                     white-space: pre-wrap;
                     box-shadow: 0px 4px 6px rgba(0,0,0,0.1);
                 }
             </style>
         </head>
         <body>
-            <h1>Select Cloud Provider</h1>
+            <h1>NIST Management Policies</h1>
             <div class="providers">
                 <button class="provider-button" onclick="selectProvider('AWS')">AWS</button>
                 <button class="provider-button" onclick="selectProvider('Azure')">Azure</button>
@@ -101,8 +106,8 @@ function getWebviewContent() {
                     };
                     const services = servicesMap[provider];
                     const servicesContainer = document.querySelector('.services');
-                    servicesContainer.innerHTML = '<h2>Select Service</h2>';
-                    servicesContainer.style.display = 'flex'; 
+                    servicesContainer.innerHTML = ''; // Clear previous buttons
+
                     services.forEach(service => {
                         const button = document.createElement('button');
                         button.className = 'service-button';
