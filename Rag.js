@@ -136,26 +136,122 @@ function getWebviewContent() {
 function getServiceTemplate(provider, service) {
     const templates = {
         AWS: {
-            EFS: 'AWS EFS Template:\nallow {\n    input.path = "EFS"\n}',
-            EKS: 'AWS EKS Template:\nallow {\n    input.path = "EKS"\n}',
-            S3: 'AWS S3 Template:\nallow {\n    input.path = "S3"\n}',
-            VPC: 'AWS VPC Template:\nallow {\n    input.path = "VPC"\n}',
-            IAM: 'AWS IAM Template:\nallow {\n    input.path = "IAM"\n}',
-            LAMBDA: 'AWS Lambda Template:\nallow {\n    input.path = "LAMBDA"\n}',
+            EFS: `
+# AWS EFS Policy
+allow {
+    input.path = "EFS"
+    input.method = "GET"
+}
+            `,
+            EKS: `
+# AWS EKS Policy
+allow {
+    input.path = "EKS"
+    input.method = "POST"
+}
+            `,
+            S3: `
+# AWS S3 Policy
+allow {
+    input.path = "S3"
+    input.method = "GET"
+}
+            `,
+            VPC: `
+# AWS VPC Policy
+allow {
+    input.path = "VPC"
+    input.method = "POST"
+}
+            `,
+            IAM: `
+# AWS IAM Policy
+allow {
+    input.path = "IAM"
+    input.method = "GET"
+}
+            `,
+            LAMBDA: `
+# AWS Lambda Policy
+allow {
+    input.path = "LAMBDA"
+    input.method = "POST"
+}
+            `,
         },
         Azure: {
-            'Blob Storage': 'Azure Blob Storage Template:\nallow {\n    input.path = "Blob Storage"\n}',
-            AKS: 'Azure AKS Template:\nallow {\n    input.path = "AKS"\n}',
-            'Function App': 'Azure Function App Template:\nallow {\n    input.path = "Function App"\n}',
-            VNet: 'Azure VNet Template:\nallow {\n    input.path = "VNet"\n}',
-            'Key Vault': 'Azure Key Vault Template:\nallow {\n    input.path = "Key Vault"\n}',
+            'Blob Storage': `
+# Azure Blob Storage Policy
+allow {
+    input.path = "Blob Storage"
+    input.method = "GET"
+}
+            `,
+            AKS: `
+# Azure AKS Policy
+allow {
+    input.path = "AKS"
+    input.method = "POST"
+}
+            `,
+            'Function App': `
+# Azure Function App Policy
+allow {
+    input.path = "Function App"
+    input.method = "GET"
+}
+            `,
+            VNet: `
+# Azure VNet Policy
+allow {
+    input.path = "VNet"
+    input.method = "POST"
+}
+            `,
+            'Key Vault': `
+# Azure Key Vault Policy
+allow {
+    input.path = "Key Vault"
+    input.method = "GET"
+}
+            `,
         },
         GCP: {
-            'Cloud Storage': 'GCP Cloud Storage Template:\nallow {\n    input.path = "Cloud Storage"\n}',
-            GKE: 'GCP GKE Template:\nallow {\n    input.path = "GKE"\n}',
-            'Cloud Functions': 'GCP Cloud Functions Template:\nallow {\n    input.path = "Cloud Functions"\n}',
-            VPC: 'GCP VPC Template:\nallow {\n    input.path = "VPC"\n}',
-            IAM: 'GCP IAM Template:\nallow {\n    input.path = "IAM"\n}',
+            'Cloud Storage': `
+# GCP Cloud Storage Policy
+allow {
+    input.path = "Cloud Storage"
+    input.method = "GET"
+}
+            `,
+            GKE: `
+# GCP GKE Policy
+allow {
+    input.path = "GKE"
+    input.method = "POST"
+}
+            `,
+            'Cloud Functions': `
+# GCP Cloud Functions Policy
+allow {
+    input.path = "Cloud Functions"
+    input.method = "GET"
+}
+            `,
+            VPC: `
+# GCP VPC Policy
+allow {
+    input.path = "VPC"
+    input.method = "POST"
+}
+            `,
+            IAM: `
+# GCP IAM Policy
+allow {
+    input.path = "IAM"
+    input.method = "GET"
+}
+            `,
         },
     };
 
