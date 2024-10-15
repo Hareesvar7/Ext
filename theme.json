@@ -1,0 +1,64 @@
+{
+    "type": "dark",
+    "colors": {
+        "editor.background": "#1E1E1E",                // Background color of the editor
+        "editor.foreground": "#D4D4D4",                // Text color in the editor
+        "editor.lineHighlightBackground": "#2C2C2C",  // Background color for the current line
+        "editor.selectionBackground": "#264F78",       // Background color for selected text
+        "editorCursor.foreground": "#FFFFFF",           // Color of the text cursor
+        "editorWhitespace.foreground": "#404040",       // Color for whitespace characters
+        "editorIndentGuide.background": "#404040",      // Color of indent guides
+        "activityBar.background": "#333333",            // Background color for the activity bar
+        "activityBar.foreground": "#FFFFFF",            // Foreground color for the activity bar items
+        "activityBarBadge.background": "#007ACC",       // Badge background color in the activity bar
+        "activityBarBadge.foreground": "#FFFFFF",       // Badge text color in the activity bar
+        "sideBar.background": "#252526",                // Background color for the side bar
+        "sideBar.foreground": "#D4D4D4",                // Text color for the side bar
+        "statusBar.background": "#007ACC",              // Background color for the status bar
+        "statusBar.foreground": "#FFFFFF",              // Foreground color for the status bar items
+        "titleBar.activeBackground": "#333333",         // Active title bar background
+        "titleBar.activeForeground": "#FFFFFF",         // Active title bar text color
+        "titleBar.inactiveBackground": "#252526",       // Inactive title bar background
+        "titleBar.inactiveForeground": "#D4D4D4"        // Inactive title bar text color
+    },
+    "tokenColors": [
+        {
+            "scope": ["comment", "comment.block.documentation"],
+            "settings": {
+                "foreground": "#6A9955", // Color for comments
+                "fontStyle": "italic" // Italicize comments
+            }
+        },
+        {
+            "scope": ["variable", "variable.parameter"],
+            "settings": {
+                "foreground": "#9CDCFE" // Color for variables
+            }
+        },
+        {
+            "scope": ["string", "string.quoted"],
+            "settings": {
+                "foreground": "#CE9178" // Color for strings
+            }
+        },
+        {
+            "scope": ["keyword", "keyword.control"],
+            "settings": {
+                "foreground": "#569CD6", // Color for keywords
+                "fontStyle": "bold" // Bold keywords
+            }
+        },
+        {
+            "scope": ["constant"],
+            "settings": {
+                "foreground": "#F44747" // Color for constants
+            }
+        },
+        {
+            "scope": ["function", "entity.name.function"],
+            "settings": {
+                "foreground": "#DCDCAA" // Color for functions
+            }
+        }
+    ]
+}
