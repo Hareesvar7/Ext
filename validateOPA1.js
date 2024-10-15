@@ -26,13 +26,24 @@ function showFileUploadWebview() {
     panel.webview.onDidReceiveMessage(async (message) => {
         if (message.command === 'evaluate') {
             const policyType = message.policyType;
-            const regoFilePath = message.regoFilePath;
-            const jsonFilePath = message.jsonFilePath;
+            const regoFileContent = message.regoFileContent;
+            const jsonFileContent = message.jsonFileContent;
+
+            // Save uploaded files temporarily
+            const regoFilePath = path.join(__dirname, 'temp_policy.rego');
+            const jsonFilePath = path.join(__dirname, 'temp_plan.json');
+
+            fs.writeFileSync(regoFilePath, regoFileContent);
+            fs.writeFileSync(jsonFilePath, jsonFileContent);
 
             // Execute the OPA command with the user-provided policy type
             const opaCommand = `opa eval -i "${jsonFilePath}" -d "${regoFilePath}" "${policyType}"`;
 
             exec(opaCommand, (error, stdout, stderr) => {
+                // Clean up the temporary files
+                fs.unlinkSync(regoFilePath);
+                fs.unlinkSync(jsonFilePath);
+
                 if (error) {
                     console.error(`Error: ${stderr}`);
                     vscode.window.showErrorMessage('Error evaluating the policy.');
@@ -62,13 +73,10 @@ function getFileUploadWebviewContent() {
                     background-color: #1e1e1e;
                     color: #d4d4d4;
                 }
-                input[type="file"] {
+                input[type="file"], input[type="text"] {
                     margin-top: 10px;
-                }
-                input[type="text"] {
                     padding: 10px;
                     width: 100%;
-                    margin-top: 10px;
                     border-radius: 5px;
                     border: 1px solid #444;
                 }
@@ -120,8 +128,8 @@ function getFileUploadWebviewContent() {
                             vscode.postMessage({
                                 command: 'evaluate',
                                 policyType,
-                                regoFilePath: regoContent, // send the content instead of path
-                                jsonFilePath: jsonContent // send the content instead of path
+                                regoFileContent: regoContent, // Send the content instead of path
+                                jsonFileContent: jsonContent // Send the content instead of path
                             });
                         };
                         readerJson.readAsText(jsonFile);
