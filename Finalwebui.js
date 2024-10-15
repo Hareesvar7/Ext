@@ -18,7 +18,7 @@ async function validateOPA() {
     panel.webview.onDidReceiveMessage(async message => {
         switch (message.command) {
             case 'runOPA':
-                await runOPAEval(message.regoFilePath, message.jsonFilePath, message.policyType, panel);
+                await runOPAEval(message.regoContent, message.jsonContent, message.policyType, panel);
                 return;
         }
     });
@@ -69,64 +69,71 @@ function getWebviewContent() {
         </head>
         <body>
             <h1>OPA Validation</h1>
-            <input type="text" id="regoFilePath" placeholder="Select .rego file path" readonly />
-            <button id="selectRego">Select .rego File</button>
-            <input type="text" id="jsonFilePath" placeholder="Select input JSON file path" readonly />
-            <button id="selectJson">Select JSON File</button>
+            <input type="file" id="regoFile" accept=".rego" />
+            <input type="file" id="jsonFile" accept=".json" />
             <input type="text" id="policyType" placeholder="Enter policy type (e.g., data.example.allow)" />
             <button id="run">Run OPA Validation</button>
             <pre id="output"></pre>
             <script>
                 const vscode = acquireVsCodeApi();
 
-                document.getElementById('selectRego').onclick = async () => {
-                    const regoFileUri = await vscode.window.showOpenDialog({
-                        canSelectMany: false,
-                        filters: { 'Rego Files': ['rego'] },
-                    });
+                document.getElementById('run').onclick = async () => {
+                    const regoFileInput = document.getElementById('regoFile');
+                    const jsonFileInput = document.getElementById('jsonFile');
 
-                    if (regoFileUri && regoFileUri.length > 0) {
-                        document.getElementById('regoFilePath').value = regoFileUri[0].fsPath;
+                    if (regoFileInput.files.length === 0 || jsonFileInput.files.length === 0) {
+                        alert('Please select both .rego and .json files.');
+                        return;
                     }
-                };
 
-                document.getElementById('selectJson').onclick = async () => {
-                    const jsonFileUri = await vscode.window.showOpenDialog({
-                        canSelectMany: false,
-                        filters: { 'JSON Files': ['json'] },
-                    });
-
-                    if (jsonFileUri && jsonFileUri.length > 0) {
-                        document.getElementById('jsonFilePath').value = jsonFileUri[0].fsPath;
-                    }
-                };
-
-                document.getElementById('run').onclick = () => {
-                    const regoFilePath = document.getElementById('regoFilePath').value;
-                    const jsonFilePath = document.getElementById('jsonFilePath').value;
+                    const regoFile = regoFileInput.files[0];
+                    const jsonFile = jsonFileInput.files[0];
                     const policyType = document.getElementById('policyType').value;
+
+                    const regoContent = await readFileContent(regoFile);
+                    const jsonContent = await readFileContent(jsonFile);
 
                     vscode.postMessage({
                         command: 'runOPA',
-                        regoFilePath,
-                        jsonFilePath,
+                        regoContent,
+                        jsonContent,
                         policyType
                     });
                 };
+
+                async function readFileContent(file) {
+                    return new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = () => reject(new Error('Failed to read file'));
+                        reader.readAsText(file);
+                    });
+                }
             </script>
         </body>
         </html>`;
 }
 
-async function runOPAEval(regoFilePath, jsonFilePath, policyType, panel) {
-    if (!regoFilePath || !jsonFilePath || !policyType) {
-        vscode.window.showErrorMessage('Please select both files and enter a policy type.');
+async function runOPAEval(regoContent, jsonContent, policyType, panel) {
+    if (!regoContent || !jsonContent || !policyType) {
+        vscode.window.showErrorMessage('Please provide the contents of the .rego and .json files and enter a policy type.');
         return;
     }
+
+    // Create temporary files to store the content
+    const regoFilePath = path.join(__dirname, 'temp.rego');
+    const jsonFilePath = path.join(__dirname, 'temp.json');
+
+    fs.writeFileSync(regoFilePath, regoContent);
+    fs.writeFileSync(jsonFilePath, jsonContent);
 
     const opaCommand = `opa eval -i ${jsonFilePath} -d ${regoFilePath} "${policyType}"`;
 
     exec(opaCommand, (error, stdout, stderr) => {
+        // Clean up temporary files after execution
+        fs.unlinkSync(regoFilePath);
+        fs.unlinkSync(jsonFilePath);
+
         if (error) {
             console.error(`Error: ${stderr}`);
             panel.webview.postMessage({ output: 'Error evaluating the policy.' });
