@@ -1,0 +1,47 @@
+{
+    "name": "my-opa-ai-extension",
+    "displayName": "My OPA AI Extension",
+    "description": "An extension for validating OPA policies and interacting with OpenAI.",
+    "version": "0.0.1",
+    "publisher": "your-publisher-name",
+    "engines": {
+        "vscode": "^1.60.0"  // Adjust the version according to your needs
+    },
+    "activationEvents": [
+        "onCommand:extension.validateOPA",
+        "onCommand:extension.aiAssistant"
+    ],
+    "main": "./src/extension.js",
+    "contributes": {
+        "commands": [
+            {
+                "command": "extension.validateOPA",
+                "title": "Validate OPA"
+            },
+            {
+                "command": "extension.aiAssistant",
+                "title": "AI Assistant"
+            }
+        ]
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "echo Compiling TypeScript... && exit 0", // Placeholder for TypeScript compilation if needed
+        "package": "vsce package"
+    },
+    "devDependencies": {
+        "vsce": "^1.100.0",  // Adjust the version according to the latest available
+        "axios": "^0.21.1"   // Ensure axios is installed
+    },
+    "keywords": [
+        "VS Code",
+        "OPA",
+        "AI",
+        "OpenAI"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/your-username/my-opa-ai-extension.git"
+    },
+    "license": "MIT"
+}
