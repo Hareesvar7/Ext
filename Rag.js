@@ -22,7 +22,7 @@ async function showCloudServiceSelection(context) {
             }
         },
         undefined,
-        context.subscriptions 
+        context.subscriptions // Use context.subscriptions for cleanup
     );
 }
 
@@ -49,7 +49,7 @@ function getWebviewContent() {
                     justify-content: center;
                     gap: 10px;
                     margin-bottom: 20px;
-                    flex-wrap: wrap; /* allows multiple rows for smaller screens */
+                    flex-wrap: wrap; 
                 }
                 .provider-button, .service-button {
                     background-color: white;
@@ -102,7 +102,7 @@ function getWebviewContent() {
                     const services = servicesMap[provider];
                     const servicesContainer = document.querySelector('.services');
                     servicesContainer.innerHTML = '<h2>Select Service</h2>';
-                    servicesContainer.style.display = 'flex'; // To align horizontally
+                    servicesContainer.style.display = 'flex'; 
                     services.forEach(service => {
                         const button = document.createElement('button');
                         button.className = 'service-button';
