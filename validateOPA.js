@@ -85,12 +85,23 @@ function getPolicyInputWebviewContent(regoFilePath, jsonFilePath) {
                 h1 {
                     color: #61afef;
                 }
+                #output {
+                    background: #282c34;
+                    color: #abb2bf;
+                    padding: 10px;
+                    border-radius: 5px;
+                    overflow: auto;
+                    white-space: pre-wrap; /* Ensures long lines are wrapped */
+                    margin-top: 20px;
+                    height: 300px; /* Fixed height for the output box */
+                }
             </style>
         </head>
         <body>
             <h1>Input Policy Type</h1>
             <input type="text" id="policyType" placeholder="Enter policy type (e.g., data.example.allow)" />
             <button id="run">Run OPA Validation</button>
+            <div id="output"></div> <!-- Output box for displaying results -->
             <script>
                 const vscode = acquireVsCodeApi();
 
@@ -108,6 +119,13 @@ function getPolicyInputWebviewContent(regoFilePath, jsonFilePath) {
                         policyType
                     });
                 };
+
+                window.addEventListener('message', event => {
+                    const message = event.data;
+                    if (message.output) {
+                        document.getElementById('output').innerText = message.output; // Display output in the output box
+                    }
+                });
             </script>
         </body>
         </html>`;
@@ -125,12 +143,12 @@ async function runOPAEval(regoFilePath, jsonFilePath, policyType, panel) {
     exec(opaCommand, (error, stdout, stderr) => {
         if (error) {
             console.error(`Error: ${stderr}`);
-            vscode.window.showErrorMessage('Error evaluating the policy.');
+            panel.webview.postMessage({ output: 'Error evaluating the policy.' });
             return;
         }
 
-        // Show results in a webview
-        showResultsInWebview(stdout);
+        // Show results in the output box
+        panel.webview.postMessage({ output: stdout });
     });
 }
 
