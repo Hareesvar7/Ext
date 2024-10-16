@@ -1,10 +1,10 @@
 const vscode = require('vscode');
 const { getStorageServiceTemplate } = require('./ServiceTemplate');
 
-async function showCloudStorageSelection(context) {
+async function showCloudServiceSelection(context) {
     const panel = vscode.window.createWebviewPanel(
-        'cloudStorageSelection', 
-        'Select Cloud Storage and Generate Template', 
+        'cloudServiceSelection', 
+        'Select Cloud Service and Generate Template', 
         vscode.ViewColumn.One, 
         {
             enableScripts: true
@@ -13,11 +13,19 @@ async function showCloudStorageSelection(context) {
 
     panel.webview.html = getWebviewContent();
 
+    // Handle messages from the webview (when user selects service)
     panel.webview.onDidReceiveMessage(
         (message) => {
             if (message.command === 'generateTemplate') {
                 const template = getStorageServiceTemplate(message.cloud, message.service);
-                panel.webview.postMessage({ command: 'showTemplate', template });
+                
+                if (template) {
+                    // Send the generated template back to the webview
+                    panel.webview.postMessage({ command: 'showTemplate', template });
+                } else {
+                    // If no template is found, show a message to the user
+                    vscode.window.showWarningMessage('No template found for the selected service.');
+                }
             }
         },
         undefined,
@@ -32,7 +40,7 @@ function getWebviewContent() {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Select Cloud Storage</title>
+        <title>Select Cloud Service</title>
         <style>
             body {
                 font-family: Arial, sans-serif;
@@ -65,6 +73,7 @@ function getWebviewContent() {
         <div class="dropdown">
             <label for="cloudProvider">Select Cloud Provider:</label>
             <select id="cloudProvider">
+                <option value="">--Select a cloud provider--</option>
                 <option value="AWS">AWS</option>
                 <option value="Azure">Azure</option>
                 <option value="GCP">GCP</option>
@@ -78,7 +87,7 @@ function getWebviewContent() {
             </select>
         </div>
 
-        <button onclick="generateTemplate()">Generate Template</button>
+        <button id="generateTemplateButton" disabled>Generate Template</button>
 
         <div class="output-box" id="outputBox"></div>
 
@@ -93,24 +102,35 @@ function getWebviewContent() {
                 const provider = this.value;
                 const serviceDropdown = document.getElementById('service');
                 serviceDropdown.innerHTML = '<option value="">--Select a service--</option>';
-                servicesMap[provider].forEach(service => {
-                    const option = document.createElement('option');
-                    option.value = service;
-                    option.textContent = service;
-                    serviceDropdown.appendChild(option);
-                });
+                if (provider) {
+                    servicesMap[provider].forEach(service => {
+                        const option = document.createElement('option');
+                        option.value = service;
+                        option.textContent = service;
+                        serviceDropdown.appendChild(option);
+                    });
+                }
+                toggleGenerateButton();
             });
 
-            function generateTemplate() {
+            document.getElementById('service').addEventListener('change', function() {
+                toggleGenerateButton();
+            });
+
+            function toggleGenerateButton() {
                 const cloudProvider = document.getElementById('cloudProvider').value;
                 const service = document.getElementById('service').value;
-                if (cloudProvider && service) {
-                    vscode.postMessage({ command: 'generateTemplate', cloud: cloudProvider, service: service });
-                } else {
-                    alert('Please select both a cloud provider and a service.');
-                }
+                const generateButton = document.getElementById('generateTemplateButton');
+                generateButton.disabled = !(cloudProvider && service);
             }
 
+            document.getElementById('generateTemplateButton').addEventListener('click', function() {
+                const cloudProvider = document.getElementById('cloudProvider').value;
+                const service = document.getElementById('service').value;
+                vscode.postMessage({ command: 'generateTemplate', cloud: cloudProvider, service: service });
+            });
+
+            // Listen for messages from the extension
             window.addEventListener('message', event => {
                 const message = event.data;
                 if (message.command === 'showTemplate') {
@@ -124,5 +144,5 @@ function getWebviewContent() {
 }
 
 module.exports = {
-    showCloudStorageSelection
+    showCloudServiceSelection
 };
