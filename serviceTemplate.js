@@ -168,7 +168,7 @@ function getStorageServiceTemplate(provider, service) {
         }
     };
 
-    return templates[provider][service] || 'No template found for this service.';
+    return templates[provider]?.[service] || 'No template found for the selected service.';
 }
 
 module.exports = {
