@@ -1,33 +1,36 @@
 {
-    "name": "my-extension",
-    "displayName": "My Extension",
-    "description": "A VS Code extension for OPA validation and cloud service templates.",
-    "version": "0.0.1",
-    "publisher": "yourname",
+    "name": "cloud-service-policy-extension",
+    "displayName": "Cloud Service Policy Extension",
+    "description": "An extension for selecting cloud services and displaying OPA policy templates.",
+    "version": "1.0.0",
     "engines": {
-        "vscode": "^1.56.0"
+        "vscode": "^1.60.0"
     },
-    "activationEvents": [
-        "onCommand:extension.validateOPA",
-        "onCommand:extension.showCloudServices" // Add this line
+    "categories": [
+        "Other"
     ],
-    "main": "./extension.js",
+    "activationEvents": [
+        "onCommand:extension.showCloudServiceSelection"
+    ],
+    "main": "./src/extension.js",
     "contributes": {
         "commands": [
             {
-                "command": "extension.validateOPA",
-                "title": "Validate OPA"
-            },
-            {
-                "command": "extension.showCloudServices", // Add this command
-                "title": "Show Cloud Services"
+                "command": "extension.showCloudServiceSelection",
+                "title": "Select Cloud Service"
             }
         ]
     },
     "scripts": {
-        "vscode:prepublish": "npx gulp build"
+        "lint": "eslint .",
+        "compile": "npx tsc",
+        "test": "npm run compile && node ./out/test/runTest.js"
     },
     "devDependencies": {
-        "typescript": "^4.0.0"
+        "typescript": "^4.4.3",
+        "vscode": "^1.1.37"
+    },
+    "dependencies": {
+        "vscode": "^1.60.0"
     }
 }
