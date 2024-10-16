@@ -1,187 +1,176 @@
-// src/services/serviceTemplates.js
-const serviceTemplates = {
-    AWS: {
-        EFS: `
-        package efs
+function getStorageServiceTemplate(provider, service) {
+    const templates = {
+        AWS: {
+            EFS: `
+            package aws.efs
 
-        allow {
-            input.path == "EFS"
-        }
+            default allow = false
 
-        allow {
-            input.action == "CreateFile"
-        }
-        `,
-        EKS: `
-        package eks
+            allow {
+                input.path = "EFS"
+                input.action = "mount"
+            }
+            `,
+            EKS: `
+            package aws.eks
 
-        allow {
-            input.path == "EKS"
-        }
+            default allow = false
 
-        allow {
-            input.action == "Deploy"
-        }
-        `,
-        S3: `
-        package s3
+            allow {
+                input.cluster = "EKS"
+                input.action = "deploy"
+            }
+            `,
+            S3: `
+            package aws.s3
 
-        allow {
-            input.path == "S3"
-        }
+            default allow = false
 
-        allow {
-            input.action == "PutObject"
-        }
-        `,
-        VPC: `
-        package vpc
+            allow {
+                input.bucket = "S3"
+                input.action = "read"
+            }
+            `,
+            VPC: `
+            package aws.vpc
 
-        allow {
-            input.path == "VPC"
-        }
+            default allow = false
 
-        allow {
-            input.action == "CreateSubnet"
-        }
-        `,
-        IAM: `
-        package iam
+            allow {
+                input.network = "VPC"
+                input.action = "connect"
+            }
+            `,
+            IAM: `
+            package aws.iam
 
-        allow {
-            input.path == "IAM"
-        }
+            default allow = false
 
-        allow {
-            input.action == "AttachPolicy"
-        }
-        `,
-        LAMBDA: `
-        package lambda
+            allow {
+                input.role = "IAM"
+                input.action = "assume"
+            }
+            `,
+            LAMBDA: `
+            package aws.lambda
 
-        allow {
-            input.path == "LAMBDA"
-        }
+            default allow = false
 
-        allow {
-            input.action == "Invoke"
-        }
-        `,
-    },
-    Azure: {
-        'Blob Storage': `
-        package blob
+            allow {
+                input.function = "LAMBDA"
+                input.action = "invoke"
+            }
+            `
+        },
+        Azure: {
+            'Blob Storage': `
+            package azure.blob_storage
 
-        allow {
-            input.path == "Blob Storage"
-        }
+            default allow = false
 
-        allow {
-            input.action == "UploadBlob"
-        }
-        `,
-        AKS: `
-        package aks
+            allow {
+                input.container = "Blob Storage"
+                input.action = "upload"
+            }
+            `,
+            AKS: `
+            package azure.aks
 
-        allow {
-            input.path == "AKS"
-        }
+            default allow = false
 
-        allow {
-            input.action == "Scale"
-        }
-        `,
-        'Function App': `
-        package functionApp
+            allow {
+                input.cluster = "AKS"
+                input.action = "scale"
+            }
+            `,
+            'Function App': `
+            package azure.function_app
 
-        allow {
-            input.path == "Function App"
-        }
+            default allow = false
 
-        allow {
-            input.action == "Execute"
-        }
-        `,
-        VNet: `
-        package vnet
+            allow {
+                input.function = "Function App"
+                input.action = "run"
+            }
+            `,
+            VNet: `
+            package azure.vnet
 
-        allow {
-            input.path == "VNet"
-        }
+            default allow = false
 
-        allow {
-            input.action == "Create"
-        }
-        `,
-        'Key Vault': `
-        package keyVault
+            allow {
+                input.network = "VNet"
+                input.action = "join"
+            }
+            `,
+            'Key Vault': `
+            package azure.key_vault
 
-        allow {
-            input.path == "Key Vault"
-        }
+            default allow = false
 
-        allow {
-            input.action == "AccessSecret"
-        }
-        `,
-    },
-    GCP: {
-        'Cloud Storage': `
-        package cloudStorage
+            allow {
+                input.vault = "Key Vault"
+                input.action = "access"
+            }
+            `
+        },
+        GCP: {
+            'Cloud Storage': `
+            package gcp.cloud_storage
 
-        allow {
-            input.path == "Cloud Storage"
-        }
+            default allow = false
 
-        allow {
-            input.action == "WriteObject"
-        }
-        `,
-        GKE: `
-        package gke
+            allow {
+                input.bucket = "Cloud Storage"
+                input.action = "store"
+            }
+            `,
+            GKE: `
+            package gcp.gke
 
-        allow {
-            input.path == "GKE"
-        }
+            default allow = false
 
-        allow {
-            input.action == "Deploy"
-        }
-        `,
-        'Cloud Functions': `
-        package cloudFunctions
+            allow {
+                input.cluster = "GKE"
+                input.action = "launch"
+            }
+            `,
+            'Cloud Functions': `
+            package gcp.cloud_functions
 
-        allow {
-            input.path == "Cloud Functions"
-        }
+            default allow = false
 
-        allow {
-            input.action == "Trigger"
-        }
-        `,
-        VPC: `
-        package vpc
+            allow {
+                input.function = "Cloud Functions"
+                input.action = "execute"
+            }
+            `,
+            VPC: `
+            package gcp.vpc
 
-        allow {
-            input.path == "VPC"
-        }
+            default allow = false
 
-        allow {
-            input.action == "Create"
-        }
-        `,
-        IAM: `
-        package iam
+            allow {
+                input.network = "VPC"
+                input.action = "connect"
+            }
+            `,
+            IAM: `
+            package gcp.iam
 
-        allow {
-            input.path == "IAM"
-        }
+            default allow = false
 
-        allow {
-            input.action == "GrantRole"
+            allow {
+                input.role = "IAM"
+                input.action = "grant"
+            }
+            `
         }
-        `,
-    },
+    };
+
+    return templates[provider][service] || 'No template found for this service.';
+}
+
+module.exports = {
+    getStorageServiceTemplate
 };
-
-module.exports = serviceTemplates;
